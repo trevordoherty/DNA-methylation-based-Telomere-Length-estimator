@@ -44,7 +44,7 @@ def main():
     feat_select = feature_selection()
     utils_funcs = util_funcs()
 
-    fraction = 0.05
+    fraction = 1
     adjusted = 'No'
     search_type = 'GridSearchCV'
     start_time = time.time()
@@ -89,7 +89,7 @@ def main():
                          9500, 9750, 10000, 10250, 10500, 10750, 11000, 11250, 11500, 11750, 12000, 12250, 12500, 12750, 13000, 13250, 13500,
                          13750, 14000, 14250, 14500, 14750, 15000, 15250, 15500, 15750, 16000, 16250, 16500, 16750, 17000, 17250, 17500, 17750,
                          18000, 18250, 18500, 18750, 19000, 19250, 19500, 19750, 20000]
-            num_feats = [50, 100]
+            
         for num_feat in num_feats:
             run_results = exp_grid.nested_cv(X, y, run_results, fs, num_feat, parameter_grid, search_type, train_indices, test_indices, ranked_dfs)
     # Can plot the timing graph for search types at this point.
