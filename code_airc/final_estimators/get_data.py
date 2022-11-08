@@ -1,3 +1,4 @@
+
 """
 Description:
 
@@ -19,22 +20,29 @@ fold during the cross-validation process.
 # Library imports
 import numpy as np
 import pandas as pd
+from pdb import set_trace
 
 def read_dunedin_data_sets(fraction):
     """Read in data sets."""
     # ******************************Dunedin data********************************
-    dunedin_X = pd.read_pickle('/home/ICTDOMAIN/d18129068/feature_selection/static/Dunedin_betas.pkl')
-    dunedin_y = pd.read_csv('/home/ICTDOMAIN/d18129068/feature_selection/static/Dunedin_pheno.csv', index_col=0)
+    #dunedin_X = pd.read_pickle('/home/ICTDOMAIN/d18129068/feature_selection/static/Dunedin_betas.pkl')
+    #dunedin_y = pd.read_csv('/home/ICTDOMAIN/d18129068/feature_selection/static/Dunedin_pheno.csv', index_col=0)
+    #dunedin_X = pd.read_csv('../../static/Dunedin_betas.csv')
+    dunedin_X = pd.read_pickle('../../static/Dunedin_betas.pkl')
+    dunedin_y = pd.read_csv('../../static/Dunedin_pheno.csv', index_col=0)
 
     # Set index back to CpG names as this was reset during read_pickle
     dunedin_X.set_index(dunedin_X.columns[0], inplace=True)
     # Transpose dunedin_X betas
     dunedin_X = dunedin_X.T
     # Subset for testing
-    # dunedin_X = dunedin_X.sample(frac=fraction, axis='columns', random_state=42)
-    dunedin_26 = pd.read_csv('/home/ICTDOMAIN/d18129068/feature_selection/static/plate_adj_TL_Dunedin_26.df.csv', index_col=0)
-    dunedin_38 = pd.read_csv('/home/ICTDOMAIN/d18129068/feature_selection/static/plate_adj_TL_Dunedin_38.df.csv', index_col=0)
-    # Add suffix to the UniqueIDNUmber to ensure unique value for mapping basename
+    dunedin_X = dunedin_X.sample(frac=fraction, axis='columns', random_state=42)
+    #dunedin_26 = pd.read_csv('/home/ICTDOMAIN/d18129068/feature_selection/static/plate_adj_TL_Dunedin_26.df.csv', index_col=0)
+    #dunedin_38 = pd.read_csv('/home/ICTDOMAIN/d18129068/feature_selection/static/plate_adj_TL_Dunedin_38.df.csv', index_col=0)
+    dunedin_26 = pd.read_csv('../../static/plate_adj_TL_Dunedin_26.df.csv', index_col=0)
+    dunedin_38 = pd.read_csv('../../static/plate_adj_TL_Dunedin_38.df.csv', index_col=0)
+    
+    # Add suffix to the UniqueIDNumber to ensure unique value for mapping basename
     dunedin_26['UniqueIDNumber'] = dunedin_26['UniqueIDNumber'] + '_26'
     dunedin_38['UniqueIDNumber'] = dunedin_38['UniqueIDNumber'] + '_38'
     return dunedin_X, dunedin_y, dunedin_26, dunedin_38
@@ -61,16 +69,22 @@ def read_extend_data_sets(adjusted):
 
 def read_twin_data_sets(adjusted):
     """Read in TWIn data."""
-    twin_y = pd.read_csv('/home/ICTDOMAIN/d18129068/feature_selection/static/EMMA_pheno_twins.csv', index_col=0)
-    twin_nqr = pd.read_csv('/home/ICTDOMAIN/d18129068/feature_selection/static/plate_adj_TL_TWIN.df2.csv')
+
+    #twin_y = pd.read_csv('/home/ICTDOMAIN/d18129068/feature_selection/static/EMMA_pheno_twins.csv', index_col=0)
+    #twin_nqr = pd.read_csv('/home/ICTDOMAIN/d18129068/feature_selection/static/plate_adj_TL_TWIN.df2.csv')
+    twin_y = pd.read_csv('../../static/EMMA_pheno_twins.csv', index_col=0)
+    twin_nqr = pd.read_csv('../../static/plate_adj_TL_TWIN.df2.csv')
+
 
     nqr_id_map = dict(zip(twin_nqr['X.1'], twin_nqr['Adjusted TL (Plate ID']))
     twin_y['NQR'] = twin_y['X.1'].map(nqr_id_map)
 
     if adjusted == 'No':
-        twin_X = pd.read_csv('/home/ICTDOMAIN/d18129068/feature_selection/static/beta_telo_twin.csv', index_col=0)
+        #twin_X = pd.read_csv('/home/ICTDOMAIN/d18129068/feature_selection/static/beta_telo_twin.csv', index_col=0)
+        twin_X = pd.read_csv('../../static/beta_telo_twin.csv', index_col=0)
     elif adjusted == 'Yes':
-        twin_X = pd.read_csv('/home/ICTDOMAIN/d18129068/feature_selection/static/adj.Beta_twin.df.csv', index_col=0)
+        #twin_X = pd.read_csv('/home/ICTDOMAIN/d18129068/feature_selection/static/adj.Beta_twin.df.csv', index_col=0)
+        twin_X = pd.read_csv('../../static/adj.Beta_twin.df.csv', index_col=0)
         twin_X.columns = twin_X.columns.str[1:]
 
     # Transpose betas so that the participants are row-wise and DNAm probes are column-wise
@@ -84,11 +98,14 @@ def read_twin_data_sets(adjusted):
 def filter_on_cpg_and_ch_features(df):
     """Keep only 'cg' or 'ch' features.
 
-    Excludes 'rs' features etc. 
+    Excludes 'rs' features etc.
     """
     # Identify column names containing 'cg' and get list of any that contain >=1 NaN value
     searchfor = ['cg', 'ch']
-    meth_cols = df.loc[:, df.columns.str.contains('|'.join(searchfor))].columns
+    try:
+        meth_cols = df.loc[:, df.columns.str.contains('|'.join(searchfor))].columns
+    except:
+        set_trace()
     return df[meth_cols]
 
 
@@ -168,9 +185,11 @@ def filter_data_sets_on_common_cpgs(dunedin_X, extend_X, twin_X):
 def read_input(sample_id_excl, adjusted):
     """Read in methylation data."""
     if adjusted == 'No':
-        X = pd.read_csv("/home/ICTDOMAIN/d18129068/feature_selection/static/betas.csv", index_col=0)
+        #X = pd.read_csv("/home/ICTDOMAIN/d18129068/feature_selection/static/betas.csv", index_col=0)
+        X = pd.read_csv("../../static/betas.csv", index_col=0)
     elif adjusted == 'Yes':
-        X = pd.read_csv("/home/ICTDOMAIN/d18129068/feature_selection/static/adj_betas_plate_id.csv", index_col=0)
+        #X = pd.read_csv("/home/ICTDOMAIN/d18129068/feature_selection/static/adj_betas_plate_id.csv", index_col=0)
+        X = pd.read_csv("../../static/adj_betas_plate_id.csv", index_col=0)
     X = X.T
     X = X[~X.index.isin(sample_id_excl)]
     return X
@@ -178,8 +197,10 @@ def read_input(sample_id_excl, adjusted):
 
 def read_labels(y_label):
     """Read in y labels."""
-    y = pd.read_csv('/home/ICTDOMAIN/d18129068/feature_selection/static/pheno_tel_path.csv', index_col=0)
-    nqr = pd.read_csv('/home/ICTDOMAIN/d18129068/feature_selection/static/plate_adj_TL_EXTEND.df2.csv')
+    #y = pd.read_csv('/home/ICTDOMAIN/d18129068/feature_selection/static/pheno_tel_path.csv', index_col=0)
+    #nqr = pd.read_csv('/home/ICTDOMAIN/d18129068/feature_selection/static/plate_adj_TL_EXTEND.df2.csv')
+    y = pd.read_csv('../../static/pheno_tel_path.csv', index_col=0)
+    nqr = pd.read_csv('../../static/plate_adj_TL_EXTEND.df2.csv')
 
     nqr_id_map = dict(zip(nqr['Sample.ID'], nqr['Adjusted TL (Plate ID']))
     y['NQR'] = y['Sample_ID2'].map(nqr_id_map)
@@ -193,4 +214,3 @@ def read_labels(y_label):
     sample_id_excl = [x[1:] for x in sample_id_excl]
     y = y[y_label]
     return y, clinical, sample_id_excl, nqr
-

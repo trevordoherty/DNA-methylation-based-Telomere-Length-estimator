@@ -1,3 +1,5 @@
+
+
 """
 Description:
 
@@ -7,7 +9,7 @@ regression.
 
 """
 
-from utils import *
+from utils4 import *
 from boostaroota import BoostARoota
 import numpy as np
 import pandas as pd
@@ -36,7 +38,7 @@ class feature_selection() :
     def apply_f_test_with_fdr(self, X, y, tol):
         """Return pearson r correlation between each input and the output variable.
 
-        Choi et al. used this approach in their Genes journal paper. ie. 
+        Choi et al. used this approach in their Genes journal paper. ie.
         "We performed F-tests between the beta values of each CpG probe and age and selected CpG sites with
         false discovery rate (FDR, Benjamini–Hochberg procedure [42]) values less than 0.05. Here, the F value
         of the regression analysis is the test result of the null hypothesis that the regression coefficients are
@@ -59,7 +61,6 @@ class feature_selection() :
         ranked_df = ranked_scores.sort_values('Scores', ascending=False)
         return features, ranked_df
 
-
     def apply_pearson_r(self, X, y, tol):
         """Return pearson r correlation between each input and the output variable."""
         scores = [pearsonr(X[col], y) for col in X.columns]
@@ -80,7 +81,7 @@ class feature_selection() :
         # Create and rank a dataframe of feature names and scores
         ranked_df = pd.DataFrame({'Feature Name': X.columns,
                                   'Scores': mig_scores}).sort_values('Scores', ascending=False)
-        print('{}*100 % of MIG scores > 0'.format(np.round(ranked_df[ranked_df['Scores'] > 0].shape[0] / ranked_df.shape[0],3)))
+        print('{}% of MIG scores > 0'.format(np.round((ranked_df[ranked_df['Scores'] > 0].shape[0] / ranked_df.shape[0]) * 100,3)))
         features = ranked_df['Feature Name']
         return features, ranked_df
 
@@ -89,7 +90,7 @@ class feature_selection() :
         """Return random forest feature importances for each CpG.
 
         """
-        filepath = '/home/ICTDOMAIN/d18129068/feature_selection_paper/rankings/linearSVC_feature_ranking_per_fold/linearSVC_feature_ranking_fold_' + str(idx) + '.csv'
+        filepath = '../../rankings/linearSVC_feature_ranking_fold_' + str(idx) + '.csv'
         file = Path(filepath)
         if file.is_file():
             ranked_df = pd.read_csv(filepath, index_col=0)
@@ -125,7 +126,7 @@ class feature_selection() :
             ranked_df.sort_values('Coefficient', ascending=False, inplace=True)
             print('{} % of LinearSVR scores > 0'.format(np.round(ranked_df[ranked_df['Coefficient'] > 0].shape[0] / ranked_df.shape[0], 3)*100))
             # Save the feature importances for each fold of the nested CV i.e. for each of the 5 inner CV (training)/outer test set pairs
-            ranked_df.to_csv('/home/ICTDOMAIN/d18129068/feature_selection_paper/rankings/linearSVC_feature_ranking_per_fold/linearSVC_feature_ranking_fold_' + str(idx) + '.csv')
+            ranked_df.to_csv('../../rankings/linearSVC_feature_ranking_fold_' + str(idx) + '.csv')
             features = ranked_df['Feature Name']
         return features, ranked_df
 
@@ -134,7 +135,7 @@ class feature_selection() :
         """Return boostaroota selected features/CpGs.
 
         """
-        filepath = '/home/ICTDOMAIN/d18129068/feature_selection_paper/rankings/boostaroota_feature_rankings_per_fold/feature_ranking_fold_' + str(idx) + '.csv'
+        filepath = '../../rankings/boostaroota_feature_rankings_per_fold/feature_ranking_fold_' + str(idx) + '.csv'
         file = Path(filepath)
         if file.is_file():
             ranked_df = pd.read_csv(filepath, index_col=0)
@@ -153,7 +154,7 @@ class feature_selection() :
             print('{} features chosen by BoostARoota'.format(ranked_df.shape[0]))
             features = ranked_df['Feature Name']
             # Save the feature importances for each fold of the nested CV i.e. for each of the 5 inner CV (training)/outer test set pairs
-            ranked_df.to_csv('/home/ICTDOMAIN/d18129068/feature_selection_paper/rankings/boostaroota_feature_rankings_per_fold/feature_ranking_fold_' + str(idx) + '.csv')
+            ranked_df.to_csv('../../rankings/feature_ranking_fold_' + str(idx) + '.csv')
         return features, ranked_df
 
 
@@ -161,7 +162,7 @@ class feature_selection() :
         """Return random forest feature importances for each CpG.
 
         """
-        filepath = '/home/ICTDOMAIN/d18129068/feature_selection_paper/rankings/rf_feature_rankings/rf_feature_ranking_fold_' + str(idx) + '.csv'
+        filepath = '../../rankings/rf_feature_ranking_fold_' + str(idx) + '.csv'
         file = Path(filepath)
         if file.is_file():
             ranked_df = pd.read_csv(filepath, index_col=0)
@@ -171,12 +172,11 @@ class feature_selection() :
             groups_inner = np.array(X['snum'])
             cv_inner = GroupKFold(n_splits=2)
             model = RandomForestRegressor(random_state=0)
-            search = RandomizedSearchCV(model, parameter_grid, scoring='neg_mean_squared_error', cv=cv_inner, refit=True, n_jobs=-1, verbose=2, random_state=0) 
+            search = RandomizedSearchCV(model, parameter_grid, scoring='neg_mean_squared_error', cv=cv_inner, refit=True, n_jobs=-1, verbose=2, random_state=0)
             print('Fitting model...')
             fit_time_start = time.time()
             model = search.fit(X.iloc[:, :-1], y, groups_inner)
             print('Fit time: {}'.format(time.time() - fit_time_start))
-
             feats = {}
             for feature, importance in zip(X.iloc[:, :-1].columns.values, model.best_estimator_.feature_importances_):
                 feats[feature] = importance
@@ -187,7 +187,7 @@ class feature_selection() :
             print('{}*100 % of random forest scores > 0'.format(np.round(ranked_df[ranked_df['Gini-importance'] > 0].shape[0] / ranked_df.shape[0],3)))
             features = ranked_df['Feature Name']
             # Save the feature importances for each fold of the nested CV i.e. for each of the 5 inner CV (training)/outer test set pairs
-            ranked_df.to_csv('/home/ICTDOMAIN/d18129068/feature_selection_paper/rankings/rf_feature_rankings/rf_feature_ranking_fold_' + str(idx) + '.csv')
+            ranked_df.to_csv('../../rankings/q      rf_feature_ranking_fold_' + str(idx) + '.csv')
             features = ranked_df['Feature Name']
         return features, ranked_df
 
@@ -211,14 +211,14 @@ class feature_selection() :
         """Return subset of filtered features."""
         if fs[0] == 'pearson_r':
             top_feat_cols, ranked_df = self.apply_pearson_r(X, y, fs[1])
-        elif fs[0] == 'f_test_fdr':
+        elif fs[0] == 'f_test_fdr1':
             top_feat_cols, ranked_df = self.apply_f_test_with_fdr(X, y, fs[1])
-        elif fs[0] == 'variance':
-            top_feat_cols, ranked_df = self.variance_threshold(X, y, fs[1])
+        elif fs[0] == 'f_test_fdr2':
+            top_feat_cols, ranked_df = self.apply_f_test_with_fdr(X, y, fs[1])
         elif fs[0] == 'mutual_info_gain':
             top_feat_cols, ranked_df = self.mutual_info_gain(X, y, fs[1])
-        elif fs[0] == 'relief':
-            top_feat_cols, ranked_df = self.relief(X, y, fs[1])
+        elif fs[0] == 'pca':
+            top_feat_cols, ranked_df = self.pca(X, y, fs[1])
         elif fs[0] == 'LinearSVR':
             top_feat_cols, ranked_df = self.linear_SVR(X, y, fs[1], idx)
         elif fs[0] == 'boostaroota':

@@ -1,5 +1,4 @@
 
-
 """
 Author: Trevor Doherty
 
@@ -8,7 +7,6 @@ Date: Summer 2021
 Description: Scripts containing assortment of supporting functions for model development.
 
 """
-
 import itertools
 import numpy as np
 import pandas as pd
@@ -65,15 +63,15 @@ class util_funcs():
         return param_combos, parameter_grid
 
 
-    def mean_absolute_percentage_error(self, y_true, y_pred):
+def mean_absolute_percentage_error(self, y_true, y_pred):
         return np.mean(np.abs((y_true - y_pred) / y_true)) * 100
 
 
-    def save_run_results(self, results, fs, search_type):
-        """Convert results list to dataframe."""
-        cols = ['Test MAE Per Run', 'Test RMSE Per Run', 'Test MAPE Per Run', 'Test Corr Per Run', '5-fold Inner CV MAE Per Run',
-                'Original Features', 'Top N Ranked Features', 'Non-zero Coefs after EN', 'Best Alpha', 'Best l1 ratio', 'Time', 'Run', 'Feat Sel']
-        results_df = pd.DataFrame(results, columns=cols)
-        # fs = ''.join(x for x in str(fs) if x.isalpha())
-        results_df.to_csv('/home/ICTDOMAIN/d18129068/feature_selection_paper/results/run_results_' + '_' + search_type + '_' + fs[0] + '_' + str(fs[1]) +  '.csv')
-        return results_df
+def save_run_results(self, results, fs, search_type):
+    """Convert results list to dataframe."""
+    cols = ['Test MAE Per Run', 'Test RMSE Per Run', 'Test MAPE Per Run', 'Test Corr Per Run', '5-fold Inner CV MAE Per Run',
+            'Original Features', 'Top N Ranked Features', 'Non-zero Coefs after EN', 'Best Alpha', 'Best l1 ratio', 'Time', 'Run', 'Feat Sel']
+    results_df = pd.DataFrame(results, columns=cols)
+    # fs = ''.join(x for x in str(fs) if x.isalpha())
+    results_df.to_csv('../../results/run_results_' + '_' + search_type + '_' + fs[0] + '_' + str(fs[1]) +  '.csv')
+    return results_df
