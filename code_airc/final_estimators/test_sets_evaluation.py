@@ -201,19 +201,21 @@ def return_metrics_on_external_test_sets(y, yhat, results, method, dataset, runt
 
 def save_results_to_file(predictions_extend, predictions_twin, results, part):
     """Save down results and predictions files."""
-    predictions_extend.to_csv('/home/ICTDOMAIN/d18129068/feature_selection_paper/results/results_external_test_sets/predictions_extend_' + part + '.csv')
-    predictions_twin.to_csv('/home/ICTDOMAIN/d18129068/feature_selection_paper/results/results_external_test_sets/predictions_twin_' + part + '.csv')
+    predictions_extend.to_csv('../../results/predictions_extend_' + part + '.csv')
+    predictions_twin.to_csv('../../results/predictions_twin_' + part + '.csv')
     results_df = pd.DataFrame(results, columns=['Method', 'Dataset', 'MAE', 'MAPE', 'RMSE', 'Correlation', 'Run time'])
-    results_df.to_csv('/home/ICTDOMAIN/d18129068/feature_selection_paper/results/results_external_test_sets/results_' + part + '.csv')
+    results_df.to_csv('../../results/results_' + part + '.csv')
 
 
 def main():
-    # Dunedin data is the training data set and EXTEND will be the test data set
-    # Read in training data, test data - EXTEND and TWIN data
+    # Dunedin data is the training data set and EXTEND/TWIN are the test data sets
+    # Read in training data, test data
     fraction = 1
+    # Setting adjusted='No' ensures that the TL for each data set is the TL adjusted by plate ID
+    # The input methylation levels are not adjusted - the original values are used.
     betas_status = 'unadjusted_betas_adjusted_tl'
-    # Get the training and 2 independent data sets
     adjusted = 'No'
+    # Get the training and 2 independent data sets
     dunedin_X, dunedin_y, dunedin_26, dunedin_38 = read_dunedin_data_sets(fraction)
     basename_map = get_basename_map(dunedin_y)
     extend_X, extend_y = read_extend_data_sets(adjusted)
@@ -227,7 +229,7 @@ def main():
     predictions_extend = pd.DataFrame(); predictions_twin = pd.DataFrame()
     start = time.time()
 
-    """
+    
     # Build model 1: PCA
     # Fit PCA on Dunedin data and transform test data sets
     # EXTEND
@@ -276,7 +278,6 @@ def main():
     results = return_metrics_on_external_test_sets(extend_y, pred_extend, results, betas_status + '_Baseline_090122', 'EXTEND', time.time() - start)
     predictions_extend['Baseline Predicted EXTEND'] = pred_extend
     # TWIN
-    # pred_twin = elastic_net_full_training_and_prediction(X, y, X.iloc[:, :-1], twin_X[X.iloc[:, :-1].columns])
     results = return_metrics_on_external_test_sets(twin_y, pred_twin, results, betas_status + '_Baseline_090122', 'TWIN', time.time() - start)
     predictions_twin['Baseline Predicted TWIN'] = pred_twin
     save_results_to_file(predictions_extend, predictions_twin, results, betas_status + '_Baseline_090122')
@@ -313,8 +314,6 @@ def main():
     # Optimal no. of features from nested CV feature selection methods graph was 6500 features
     # EXTEND
     features, ranked_df = feat_sel.mutual_info_gain(X.iloc[:, :-1], y, 0)
-    #ranked_df = pd.read_pickle('/ichec/home/users/trevdoc/fs/results/mig_rankings_for_corr_analysis.pkl')
-    #ranked_df.to_csv('/ichec/home/users/trevdoc/fs/results/mig_rankings_for_corr_analysis.csv')
     pred_extend, pred_twin = elastic_net_full_training_and_prediction(X, y, X[ranked_df['Feature Name'][0:6500]], extend_X[ranked_df['Feature Name'][0:6500]], twin_X[ranked_df['Feature Name'][0:6500]], betas_status + 'MIG_recheck')
     results = return_metrics_on_external_test_sets(extend_y, pred_extend, results, betas_status + 'MIG_recheck', 'EXTEND', time.time() - start)
     predictions_extend['MIG Predicted EXTEND'] = pred_extend
@@ -330,9 +329,7 @@ def main():
     # Optimal no. of features from nested CV feature selection methods graph was 8500 features
     # EXTEND
     features, ranked_df = feat_sel.linear_SVR(X, y, 0, 'unadj_betas_adj_tl_svr')
-    print('*******************Finished feature ranking piece...******************')
     pred_extend, pred_twin = elastic_net_full_training_and_prediction(X, y, X[ranked_df['Feature Name'][0:8500]], extend_X[ranked_df['Feature Name'][0:8500]], twin_X[ranked_df['Feature Name'][0:8500]], betas_status + 'Linear SVR')
-    print('*******************Finished elastic net training and predictions...******************')
     results = return_metrics_on_external_test_sets(extend_y, pred_extend, results, betas_status + 'Linear SVR', 'EXTEND', time.time() - start)
     predictions_extend['Linear SVR Predicted EXTEND'] = pred_extend
     # TWIN
@@ -340,7 +337,7 @@ def main():
     predictions_twin['Linear SVR Predicted TWIN'] = pred_twin
     save_results_to_file(predictions_extend, predictions_twin, results, betas_status + 'linear_SVR')
 
-    """
+    
     # Build Model 9: Random Forest-based feature ranking
     # Apply Random Forest to get feature rankings from training data (full Dunedin data)
     # EXTEND
@@ -353,13 +350,12 @@ def main():
     results = return_metrics_on_external_test_sets(twin_y, pred_twin, results, betas_status + '_Random_Forest_repeat_020222', 'TWIN', time.time() - start)
     predictions_twin['Random Forest Predicted TWIN'] = pred_twin
     save_results_to_file(predictions_extend, predictions_twin, results, betas_status + 'random_forest_repeat_020222')
-    """
+    
 
     # Build Model 10: Pearson correlation based ranking - SCALING OF FEATURES & TARGET
     # Apply Pearson correlation-based feature ranking to training data (full Dunedin data)
     # Optimal no. of features from nested CV feature selection methods graph was 750 features
     # EXTEND
-    print('Running Pearson-based ranking model with scaled features and targets...')
     features, ranked_df = feat_sel.apply_pearson_r(X.iloc[:, :-1], y, 0)
     pred_extend, pred_twin, scaler_y = elastic_net_full_training_and_prediction_with_scaling(X, y, X[ranked_df['Feature Name'][0:750]], extend_X[ranked_df['Feature Name'][0:750]], twin_X[ranked_df['Feature Name'][0:750]])
 
@@ -367,7 +363,6 @@ def main():
     mape = utils.mean_absolute_percentage_error(extend_y, scaler_y.inverse_transform(pred_extend))
     rmse = mean_squared_error(extend_y, scaler_y.inverse_transform(pred_extend))
     corr, _ = pearsonr(extend_y, scaler_y.inverse_transform(pred_extend))
-    print('MAE, MAPE and Correlation: {}, {}, {} on EXTEND using Pearson correlation (scaled X and y)'.format(np.round(mae, 3), np.round(mape, 3), np.round(corr, 3)))
     results.append(('Pearson (scaled X and y)', 'EXTEND', mae, mape, rmse, corr))
     predictions_extend['Pearson Correlation Predicted EXTEND'] = scaler_y.inverse_transform(pred_extend)
     # TWIN
@@ -375,7 +370,6 @@ def main():
     mape = utils.mean_absolute_percentage_error(twin_y, scaler_y.inverse_transform(pred_twin))
     rmse = mean_squared_error(twin_y, scaler_y.inverse_transform(pred_twin))
     corr, _ = pearsonr(twin_y, scaler_y.inverse_transform(pred_twin))
-    print('MAE, MAPE and Correlation: {}, {}, {} for method Pearson Correlation (scaled X and y) on data set TWIN'.format(np.round(mae, 3), np.round(mape, 3), np.round(corr, 3)))
     results.append(('Pearson (scaled X and y)', 'TWIN', mae, mape, rmse, corr))
     predictions_twin['Pearson Correlation Predicted TWIN'] = scaler_y.inverse_transform(pred_twin)
     save_results_to_file(predictions_extend, predictions_twin, results, 'pearson_r_scaling_X_y_replicability')
@@ -384,7 +378,6 @@ def main():
     # Build Model 11: F-test (0.01) - SCALING OF FEATURES & TARGET
     # Apply F-test (0.01) feature selection to training data (full Dunedin data)
     # EXTEND
-    print('Running F-test (0.01) feature selection with scaled features and targets...')
     features, ranked_df = feat_sel.apply_f_test_with_fdr(X.iloc[:, :-1], y, 0.01)
     pred_extend, pred_twin, scaler_y = elastic_net_full_training_and_prediction_with_scaling(X, y, X[ranked_df['Feature Name']], extend_X[ranked_df['Feature Name']], twin_X[ranked_df['Feature Name']])
 
@@ -392,7 +385,6 @@ def main():
     mape = utils.mean_absolute_percentage_error(extend_y, scaler_y.inverse_transform(pred_extend))
     rmse = mean_squared_error(extend_y, scaler_y.inverse_transform(pred_extend))
     corr, _ = pearsonr(extend_y, scaler_y.inverse_transform(pred_extend))
-    print('MAE, MAPE and Correlation: {}, {}, {} on EXTEND using F-test (0.01) (scaled X and y)'.format(np.round(mae, 3), np.round(mape, 3), np.round(corr, 3)))
     results.append(('F-test (0.01) (scaled X and y)', 'EXTEND', mae, mape, rmse, corr, time.time() - start))
     predictions_extend['F-test (0.01) Predicted EXTEND'] = scaler_y.inverse_transform(pred_extend)
     # TWIN
@@ -400,7 +392,6 @@ def main():
     mape = utils.mean_absolute_percentage_error(twin_y, scaler_y.inverse_transform(pred_twin))
     rmse = mean_squared_error(twin_y, scaler_y.inverse_transform(pred_twin))
     corr, _ = pearsonr(twin_y, scaler_y.inverse_transform(pred_twin))
-    print('MAE, MAPE and Correlation: {}, {}, {} for method F-test (0.01) (scaled X and y) on data set TWIN'.format(np.round(mae, 3), np.round(mape, 3), np.round(corr, 3)))
     results.append(('F-test (0.01) (scaled X and y)', 'TWIN', mae, mape, rmse, corr, time.time() - start))
     predictions_twin['F-test (0.01) Predicted TWIN'] = scaler_y.inverse_transform(pred_twin)
     save_results_to_file(predictions_extend, predictions_twin, results, betas_status + 'F_test_1pc_scaling_X_y')
@@ -415,8 +406,6 @@ def main():
     results = return_metrics_on_external_test_sets(extend_y, pred_extend, results, 'Linear SVR with LARS', 'EXTEND')
     predictions_extend['Linear SVR Predicted EXTEND'] = pred_extend
     # TWIN
-    #features, ranked_df = feat_sel.linear_SVR(X.iloc[:, :-1], y, 0, 0)
-    #pred_twin = elastic_net_full_training_and_prediction(X, y, X[ranked_df['Feature Name'][0:8500]], twin_X[ranked_df['Feature Name'][0:8500]])
     results = return_metrics_on_external_test_sets(twin_y, pred_twin, results, 'Linear SVR with LARS', 'TWIN')
     predictions_twin['Linear SVR Predicted TWIN'] = pred_twin
     save_results_to_file(predictions_extend, predictions_twin, results, 'linear_SVR_with_LARS')
@@ -431,8 +420,6 @@ def main():
     results = return_metrics_on_external_test_sets(extend_y, pred_extend, results, betas_status + '_MIG_with_LARS', 'EXTEND', time.time() - start)
     predictions_extend['MIG + LARS Predicted EXTEND'] = pred_extend
     # TWIN
-    #features, ranked_df = feat_sel.linear_SVR(X.iloc[:, :-1], y, 0, 0)
-    #pred_twin = elastic_net_full_training_and_prediction(X, y, X[ranked_df['Feature Name'][0:8500]], twin_X[ranked_df['Feature Name'][0:8500]])
     results = return_metrics_on_external_test_sets(twin_y, pred_twin, results, betas_status + '_MIG_with_LARS', 'TWIN', time.time() - start)
     predictions_twin['MIG + LARS Predicted TWIN'] = pred_twin
     save_results_to_file(predictions_extend, predictions_twin, results, betas_status + '_MIG_with_LARS')
@@ -447,8 +434,6 @@ def main():
     results = return_metrics_on_external_test_sets(extend_y, pred_extend, results, 'Linear SVR with SVR Learner', 'EXTEND')
     predictions_extend['Linear SVR Predicted EXTEND'] = pred_extend
     # TWIN
-    #features, ranked_df = feat_sel.linear_SVR(X.iloc[:, :-1], y, 0, 0)
-    #pred_twin = elastic_net_full_training_and_prediction(X, y, X[ranked_df['Feature Name'][0:8500]], twin_X[ranked_df['Feature Name'][0:8500]])
     results = return_metrics_on_external_test_sets(twin_y, pred_twin, results, 'Linear SVR with SVR Learner', 'TWIN')
     predictions_twin['Linear SVR Predicted TWIN'] = pred_twin
     save_results_to_file(predictions_extend, predictions_twin, results, 'linear_SVR_with_SVR_learner')
@@ -529,7 +514,6 @@ def main():
     # Build Model 17: F-test (0.01) - with SVR Learner instead of EN
     # Apply F-test (0.01) feature selection to training data (full Dunedin data)
     # EXTEND
-    print('Running F-test (0.01) feature selection with scaled features and targets...')
     features, ranked_df = feat_sel.apply_f_test_with_fdr(X.iloc[:, :-1], y, 0.01)
     pred_extend, pred_twin = SVR_full_training_and_prediction(X, y, X[ranked_df['Feature Name']],
                                                                         extend_X[ranked_df['Feature Name']], twin_X[ranked_df['Feature Name']])
@@ -544,7 +528,6 @@ def main():
     # Build Model 18: F-test (0.01) - with Passive Aggressive Learner instead of EN
     # Apply F-test (0.01) feature selection to training data (full Dunedin data)
     # EXTEND
-    print('Running F-test (0.01) feature selection with scaled features and targets...')
     features, ranked_df = feat_sel.apply_f_test_with_fdr(X.iloc[:, :-1], y, 0.01)
     pred_extend, pred_twin = passive_aggressive_full_training_and_prediction(X, y, X[ranked_df['Feature Name']],
                                                                                        extend_X[ranked_df['Feature Name']], twin_X[ranked_df['Feature Name']])
@@ -559,7 +542,6 @@ def main():
     # Build Model 19: F-test (0.01) - SCALING OF FEATURES & TARGET
     # Apply F-test (0.01) feature selection to training data (full Dunedin data)
     # EXTEND
-    print('Running F-test (0.01) feature selection with scaled features and targets...')
     features, ranked_df = feat_sel.apply_f_test_with_fdr(X.iloc[:, :-1], y, 0.01)
     pred_extend, pred_twin, y_scaled_extend, y_scaled_twin = elastic_net_full_training_and_prediction_with_separate_scaling(X, y, X[ranked_df['Feature Name']], extend_X[ranked_df['Feature Name']], twin_X[ranked_df['Feature Name']])
 
@@ -567,7 +549,6 @@ def main():
     mape = utils.mean_absolute_percentage_error(y_scaled_extend, pred_extend)
     rmse = mean_squared_error(y_scaled_extend, pred_extend)
     corr, _ = pearsonr(y_scaled_extend, pred_extend)
-    print('MAE, MAPE and Correlation: {}, {}, {} on EXTEND using F-test (0.01) (scaled X and y)'.format(np.round(mae, 3), np.round(mape, 3), np.round(corr, 3)))
     results.append(('F-test (0.01) (scaled X and y)', 'EXTEND', mae, mape, rmse, corr))
     predictions_extend['F-test (0.01) Predicted EXTEND'] = scaler_y.inverse_transform(pred_extend)
     # TWIN
@@ -575,11 +556,10 @@ def main():
     mape = utils.mean_absolute_percentage_error(y_scaled_twin, pred_twin)
     rmse = mean_squared_error(y_scaled_twin, pred_twin)
     corr, _ = pearsonr(y_scaled_twin, pred_twin)
-    print('MAE, MAPE and Correlation: {}, {}, {} for method F-test (0.01) (scaled X and y) on data set TWIN'.format(np.round(mae, 3), np.round(mape, 3), np.round(corr, 3)))
     results.append(('F-test (0.01) (scaled X and y)', 'TWIN', mae, mape, rmse, corr))
     predictions_twin['F-test (0.01) Predicted TWIN'] = scaler_y.inverse_transform(pred_twin)
     save_results_to_file(predictions_extend, predictions_twin, results, 'F_test_1pc_separate_y_scaled')
-    """
+    
 
 if __name__ == "__main__":
     main()
